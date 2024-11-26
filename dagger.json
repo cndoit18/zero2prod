@@ -1,0 +1,13 @@
+{
+  "name": "zero2prod",
+  "engineVersion": "v0.14.0",
+  "sdk": "go",
+  "dependencies": [
+    {
+      "name": "github",
+      "source": "github.com/jedevc/daggerverse/github",
+      "pin": "b2b06917e338519a04404347a105a7c3bb316472"
+    }
+  ],
+  "source": "dagger"
+}
