@@ -1,0 +1,29 @@
+name: dagger
+on: push
+jobs:
+  ci:
+    name: ci
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Test
+        uses: dagger/dagger-for-github@v7.0.1
+        with:
+          version: "latest"
+          call: test
+      - name: FormatCheck
+        uses: dagger/dagger-for-github@v7.0.1
+        with:
+          version: "latest"
+          call: format-check
+      - name: Clippy
+        uses: dagger/dagger-for-github@v7.0.1
+        with:
+          version: "latest"
+          call: clippy
+      - name: Audit
+        uses: dagger/dagger-for-github@v7.0.1
+        with:
+          version: "latest"
+          call: audit
