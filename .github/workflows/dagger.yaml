@@ -12,18 +12,22 @@ jobs:
         with:
           version: "latest"
           call: test
+          cloud-token: ${{ secrets.DAGGER_CLOUD_TOKEN }}
       - name: FormatCheck
         uses: dagger/dagger-for-github@v7.0.1
         with:
           version: "latest"
           call: format-check
+          cloud-token: ${{ secrets.DAGGER_CLOUD_TOKEN }}
       - name: Clippy
         uses: dagger/dagger-for-github@v7.0.1
         with:
           version: "latest"
           call: clippy
+          cloud-token: ${{ secrets.DAGGER_CLOUD_TOKEN }}
       - name: Audit
         uses: dagger/dagger-for-github@v7.0.1
         with:
           version: "latest"
           call: audit
+          cloud-token: ${{ secrets.DAGGER_CLOUD_TOKEN }}
