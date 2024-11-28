@@ -29,12 +29,19 @@ func New(
 
 	// +optional
 	base *dagger.Container,
+
+	// +optional
+	// +default="1.82"
+	tag string,
 ) (*Zero2Prod, error) {
-	if base == nil {
-		tag, err := dag.Github().GetLatestRelease("rust-lang/rust").Tag(ctx)
+	var err error
+	if tag == "latest" {
+		tag, err = dag.Github().GetLatestRelease("rust-lang/rust").Tag(ctx)
 		if err != nil {
 			return nil, err
 		}
+	}
+	if base == nil {
 		base, err = dag.Container().
 			From(fmt.Sprintf("rust:%s-alpine3.20", tag)).
 			WithExec([]string{
