@@ -1,3 +1,5 @@
+use std::future::IntoFuture;
+
 use tokio::net::TcpListener;
 
 #[tokio::test]
@@ -19,8 +21,6 @@ async fn spawn_app() -> String {
         .expect("Failed to bind random port");
     let port = listener.local_addr().unwrap().port();
     let server = zero2prod::run(listener).expect("Failed to bind address");
-    tokio::spawn(async {
-        server.await.unwrap();
-    });
+    tokio::spawn(server.into_future());
     format!("http://127.0.0.1:{}", port)
 }
