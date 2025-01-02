@@ -1,6 +1,8 @@
 use std::future::IntoFuture;
 
+use sqlx::PgPool;
 use tokio::net::TcpListener;
+use zero2prod::configuration::get_configuration;
 
 #[tokio::test]
 async fn health_check_works() {
@@ -20,6 +22,11 @@ async fn health_check_works() {
 #[tokio::test]
 async fn subscribe_returns_a_200_for_valid_from_data() {
     let address = spawn_app().await;
+    let configuration = get_configuration().expect("Failed to read configuration");
+    let connection_string = configuration.database.connection_string();
+    let pool = PgPool::connect(&connection_string)
+        .await
+        .expect("Failed to connect to Postgres.");
     let client = reqwest::Client::new();
 
     let body = "name=le%20guin&email=ursula_le_guin%40gmail.com";
@@ -32,6 +39,13 @@ async fn subscribe_returns_a_200_for_valid_from_data() {
         .expect("Failed to execute request.");
 
     assert_eq!(200, response.status().as_u16());
+
+    let saved = sqlx::query!("SELECT email, name FROM subscriptions")
+        .fetch_one(&pool)
+        .await
+        .expect("Failed to fetch saved subscription.");
+    assert_eq!(saved.email, "ursula_le_guin@gmail.com");
+    assert_eq!(saved.name, "le guin");
 }
 
 #[tokio::test]
@@ -68,7 +82,12 @@ async fn spawn_app() -> String {
         .await
         .expect("Failed to bind random port");
     let port = listener.local_addr().unwrap().port();
-    let server = zero2prod::run(listener).expect("Failed to bind address");
+    let configuration = get_configuration().expect("Failed to read configuration");
+    let connection_string = configuration.database.connection_string();
+    let pool = PgPool::connect(&connection_string)
+        .await
+        .expect("Failed to connect to Postgres.");
+    let server = zero2prod::run(listener, pool).expect("Failed to bind address");
     tokio::spawn(server.into_future());
     format!("http://127.0.0.1:{}", port)
 }

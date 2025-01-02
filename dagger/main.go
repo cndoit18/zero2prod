@@ -59,6 +59,7 @@ func New(
 				"cargo", "install",
 				"cargo-tarpaulin",
 				"cargo-audit",
+				"sqlx-cli",
 			}).
 			WithExec([]string{
 				"rustup", "component", "add",
@@ -96,12 +97,26 @@ type Zero2Prod struct {
 	Base      *dagger.Container
 }
 
+func WithDatabase(container *dagger.Container) *dagger.Container {
+	return container.WithServiceBinding("database",
+		dag.Container().From("postgres:17").
+			WithEnvVariable("POSTGRES_USER", "postgres").
+			WithEnvVariable("POSTGRES_DB", "newsletter").
+			WithEnvVariable("POSTGRES_PASSWORD", "password").
+			AsService(),
+	).
+		WithEnvVariable("DATABASE_URL", "postgres://postgres:password@database:5432/newsletter").
+		WithExec([]string{"cargo", "sqlx", "migrate", "run"})
+}
+
 func (m *Zero2Prod) Test(ctx context.Context) (string, error) {
-	return m.Base.WithExec([]string{"cargo", "test"}).Stderr(ctx)
+	return WithDatabase(m.Base).
+		WithExec([]string{"cargo", "test"}).Stderr(ctx)
 }
 
 func (m *Zero2Prod) Clippy(ctx context.Context) (string, error) {
-	return m.Base.WithExec([]string{"cargo", "clippy", "--", "-D", "warnings"}).Stderr(ctx)
+	return WithDatabase(m.Base).
+		WithExec([]string{"cargo", "clippy", "--", "-D", "warnings"}).Stderr(ctx)
 }
 
 func (m *Zero2Prod) FormatCheck(ctx context.Context) (string, error) {
@@ -109,5 +124,6 @@ func (m *Zero2Prod) FormatCheck(ctx context.Context) (string, error) {
 }
 
 func (m *Zero2Prod) Audit(ctx context.Context) (string, error) {
-	return m.Base.WithExec([]string{"cargo", "audit"}).Stderr(ctx)
+	return WithDatabase(m.Base).
+		WithExec([]string{"cargo", "audit"}).Stderr(ctx)
 }
