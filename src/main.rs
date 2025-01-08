@@ -9,15 +9,23 @@ use zero2prod::telemetry::{get_subscriber, init_subscriber};
 async fn main() -> std::io::Result<()> {
     let subscriber = get_subscriber(
         "zero2prod".into(),
-        "info,tower_http=info".into(),
+        "trace,tower_http=trace".into(),
         std::io::stdout,
     );
     init_subscriber(subscriber);
 
     let configuration = get_configuration().expect("Failed to read configuration.");
-    let pool = PgPool::connect(configuration.database.connection_string().expose_secret())
-        .await
+    let pool = PgPool::connect_lazy(configuration.database.connection_string().expose_secret())
         .expect("Failed to connect to Postgres.");
-    let address = format!("127.0.0.1:{}", configuration.application_port);
+
+    sqlx::migrate!("./migrations")
+        .run(&pool)
+        .await
+        .expect("Failed to migrate db.");
+
+    let address = format!(
+        "{}:{}",
+        configuration.application.host, configuration.application.port
+    );
     run(TcpListener::bind(address).await?, pool)?.await
 }

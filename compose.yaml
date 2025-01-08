@@ -2,8 +2,17 @@ services:
   postgres:
     image: "postgres:17"
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - 5432:5432
     environment:
-      - POSTGRES_USER=${POSTGRES_USER:-postgres}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
-      - POSTGRES_DB=${POSTGRES_DB:-newsletter}
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=newsletter
+  app:
+    build: .
+    ports:
+      - 8000:8000
+    develop:
+      watch:
+        - action: rebuild
+          path: .
+          target: /app
