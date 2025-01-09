@@ -1,5 +1,5 @@
-target
+target/
 Dockerfile
 .dockerignore
-.git
+.git/
 .gitignore
