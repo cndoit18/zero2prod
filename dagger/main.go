@@ -18,6 +18,8 @@ import (
 	"context"
 	"dagger/zero-2-prod/internal/dagger"
 	"fmt"
+
+	"github.com/google/uuid"
 )
 
 func New(
@@ -74,22 +76,19 @@ func New(
 	base = base.WithUser("root").
 		WithoutEnvVariable("CARGO_HOME").
 		WithDirectory("/src", workspace).
-		WithWorkdir("/src").
-		WithoutEntrypoint()
-	base = mountCaches(ctx, base)
+		WithWorkdir("/src")
+	base = mountCaches(base)
 	return &Zero2Prod{
 		Workspace: workspace,
 		Base:      base,
 	}, nil
 }
 
-func mountCaches(ctx context.Context, base *dagger.Container) *dagger.Container {
-	cargoRegistry := dag.CacheVolume("cargo_registry")
-	cargoGit := dag.CacheVolume("cargo_git")
+func mountCaches(base *dagger.Container) *dagger.Container {
+	cargoCache := dag.CacheVolume("cargo")
 
 	return base.
-		WithMountedCache("/root/.cargo/registry", cargoRegistry).
-		WithMountedCache("/root/.cargo/git", cargoGit)
+		WithMountedCache("/root/.cargo", cargoCache)
 }
 
 type Zero2Prod struct {
@@ -103,9 +102,15 @@ func WithDatabase(container *dagger.Container) *dagger.Container {
 			WithEnvVariable("POSTGRES_USER", "postgres").
 			WithEnvVariable("POSTGRES_DB", "newsletter").
 			WithEnvVariable("POSTGRES_PASSWORD", "password").
-			AsService(),
+			WithExposedPort(5432, dagger.ContainerWithExposedPortOpts{
+				ExperimentalSkipHealthcheck: false,
+			}).
+			AsService(dagger.ContainerAsServiceOpts{
+				UseEntrypoint: true,
+			}),
 	).
 		WithEnvVariable("DATABASE_URL", "postgres://postgres:password@database:5432/newsletter").
+		WithEnvVariable("NO_CACHE_MARK", uuid.New().String()).
 		WithExec([]string{"cargo", "sqlx", "migrate", "run"})
 }
 
