@@ -15,6 +15,17 @@ pub struct FormData {
     name: String,
 }
 
+impl TryFrom<FormData> for NewSubscriber {
+    type Error = String;
+
+    fn try_from(value: FormData) -> Result<Self, Self::Error> {
+        Ok(Self {
+            name: SubscriberName::parse(value.name.clone())?,
+            email: SubscriberEmail::parse(value.email.clone())?,
+        })
+    }
+}
+
 #[tracing::instrument(
     name = "Adding a new subscriber",
     skip(form_data, pool),
@@ -28,14 +39,12 @@ pub async fn subscribe(
     State(pool): State<PgPool>,
     Form(form_data): Form<FormData>,
 ) -> Result<(), StatusCode> {
-    let new_subscriber = NewSubscriber {
-        name: SubscriberName::parse(form_data.name.clone()).map_err(|_| StatusCode::BAD_REQUEST)?,
-        email: SubscriberEmail::parse(form_data.email.clone())
-            .map_err(|_| StatusCode::BAD_REQUEST)?,
-    };
-    insert_subscriber(&pool, &new_subscriber)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    insert_subscriber(
+        &pool,
+        &form_data.try_into().map_err(|_| StatusCode::BAD_REQUEST)?,
+    )
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     Ok(())
 }
 
