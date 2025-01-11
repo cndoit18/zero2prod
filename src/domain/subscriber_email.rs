@@ -25,6 +25,7 @@ impl AsMut<str> for SubscriberEmail {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use fake::locales::*;
 
     #[test]
     fn empty_string_is_rejected() {
@@ -45,5 +46,21 @@ mod tests {
         let email = "@domain.com".to_string();
         let result = SubscriberEmail::parse(email);
         assert!(result.is_err());
+    }
+
+    #[derive(Debug, Clone)]
+    struct ValidEmailFixture(pub String);
+    impl quickcheck::Arbitrary for ValidEmailFixture {
+        fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+            let username = g.choose(EN::NAME_FIRST_NAME).unwrap().to_lowercase();
+            let domain = g.choose(&["com", "net", "org"]).unwrap();
+            let email = format!("{username}@example.{domain}");
+            Self(email)
+        }
+    }
+
+    #[quickcheck_macros::quickcheck]
+    fn valid_emails_are_parsed_successfully(email: ValidEmailFixture) -> bool {
+        SubscriberEmail::parse(email.0).is_ok()
     }
 }
