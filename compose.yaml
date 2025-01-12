@@ -7,6 +7,14 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=newsletter
+  mailtutan:
+    image: "mailtutan/mailtutan:latest"
+    ports:
+      - 1025:1025
+      - 1080:1080
+    environment:
+      - MAILTUTAN_HTTP_USERNAME=admin
+      - MAILTUTAN_HTTP_PASSWORD=admin
   app:
     build: .
     ports:
