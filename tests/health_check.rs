@@ -3,7 +3,11 @@ use std::{env, future::IntoFuture};
 use once_cell::sync::Lazy;
 use sqlx::PgPool;
 use tokio::net::TcpListener;
-use zero2prod::telemetry::{get_subscriber, init_subscriber};
+use zero2prod::{
+    domain::SubscriberEmail,
+    email_client::EmailClient,
+    telemetry::{get_subscriber, init_subscriber},
+};
 
 static TRACING: Lazy<()> = Lazy::new(|| {
     let default_filter_level = "info".to_string();
@@ -128,7 +132,15 @@ async fn spawn_app() -> TestApp {
         .await
         .expect("Failed to connect to Postgres.");
 
-    let server = zero2prod::run(listener, pool.clone()).expect("Failed to bind address");
+    let server = zero2prod::run(
+        listener,
+        pool.clone(),
+        EmailClient::new(
+            "smtp://admin:admin@localhost:1025",
+            SubscriberEmail::parse("cndoit18@outlook.com".to_string()).unwrap(),
+        ),
+    )
+    .expect("Failed to bind address");
     tokio::spawn(server.into_future());
     TestApp {
         address: format!("http://127.0.0.1:{}", port),

@@ -86,9 +86,11 @@ func New(
 
 func mountCaches(base *dagger.Container) *dagger.Container {
 	cargoCache := dag.CacheVolume("cargo")
+	targetCache := dag.CacheVolume("target")
 
 	return base.
-		WithMountedCache("/root/.cargo", cargoCache)
+		WithMountedCache("/root/.cargo", cargoCache).
+		WithMountedCache("/src/target", targetCache)
 }
 
 type Zero2Prod struct {
@@ -96,7 +98,7 @@ type Zero2Prod struct {
 	Base      *dagger.Container
 }
 
-func WithDatabase(container *dagger.Container) *dagger.Container {
+func bindDatabaseService(container *dagger.Container) *dagger.Container {
 	return container.WithServiceBinding("database",
 		dag.Container().From("postgres:17").
 			WithEnvVariable("POSTGRES_USER", "postgres").
@@ -115,12 +117,15 @@ func WithDatabase(container *dagger.Container) *dagger.Container {
 }
 
 func (m *Zero2Prod) Test(ctx context.Context) (string, error) {
-	return WithDatabase(m.Base).
+	container := bindDatabaseService(m.Base)
+	return container.
+		WithEnvVariable("RUST_BACKTRACE", "1").
 		WithExec([]string{"cargo", "test"}).Stderr(ctx)
 }
 
 func (m *Zero2Prod) Clippy(ctx context.Context) (string, error) {
-	return WithDatabase(m.Base).
+	container := bindDatabaseService(m.Base)
+	return container.
 		WithExec([]string{"cargo", "clippy", "--", "-D", "warnings"}).Stderr(ctx)
 }
 
@@ -129,6 +134,7 @@ func (m *Zero2Prod) FormatCheck(ctx context.Context) (string, error) {
 }
 
 func (m *Zero2Prod) Audit(ctx context.Context) (string, error) {
-	return WithDatabase(m.Base).
+	container := bindDatabaseService(m.Base)
+	return container.
 		WithExec([]string{"cargo", "audit"}).Stderr(ctx)
 }
