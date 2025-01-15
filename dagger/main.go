@@ -99,7 +99,7 @@ type Zero2Prod struct {
 }
 
 func bindDatabaseService(container *dagger.Container) *dagger.Container {
-	return container.WithServiceBinding("database",
+	return container.WithServiceBinding("postgres",
 		dag.Container().From("postgres:17").
 			WithEnvVariable("POSTGRES_USER", "postgres").
 			WithEnvVariable("POSTGRES_DB", "newsletter").
@@ -111,7 +111,7 @@ func bindDatabaseService(container *dagger.Container) *dagger.Container {
 				UseEntrypoint: true,
 			}),
 	).
-		WithEnvVariable("DATABASE_URL", "postgres://postgres:password@database:5432/newsletter").
+		WithEnvVariable("DATABASE_URL", "postgres://postgres:password@postgres:5432/newsletter").
 		WithEnvVariable("NO_CACHE_MARK", uuid.New().String()).
 		WithExec([]string{"cargo", "sqlx", "migrate", "run"})
 }
@@ -120,7 +120,7 @@ func (m *Zero2Prod) Test(ctx context.Context) (string, error) {
 	container := bindDatabaseService(m.Base)
 	return container.
 		WithEnvVariable("RUST_BACKTRACE", "1").
-		WithExec([]string{"cargo", "test"}).Stderr(ctx)
+		WithExec([]string{"cargo", "test", "--", "--nocapture"}).Stderr(ctx)
 }
 
 func (m *Zero2Prod) Clippy(ctx context.Context) (string, error) {

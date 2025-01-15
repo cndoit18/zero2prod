@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use secrecy::ExposeSecret;
 use secrecy::SecretString;
 use serde::Deserialize;
@@ -6,26 +8,27 @@ use validator::ValidateEmail;
 
 use crate::domain::SubscriberEmail;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct Settings {
     pub database: DatabaseSettings,
     pub application: ApplicationSettings,
     pub email_client: EmailClientSettings,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct EmailClientSettings {
     pub sender_email: String,
     pub email_service: EmailService,
+    pub timeout_milliseconds: u64,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub enum EmailService {
     #[serde(rename = "smtp")]
     Smtp(SmtpSettings),
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct SmtpSettings {
     pub host: String,
     pub port: u32,
@@ -34,6 +37,9 @@ pub struct SmtpSettings {
 }
 
 impl EmailClientSettings {
+    pub fn timeout(&self) -> Duration {
+        Duration::from_millis(self.timeout_milliseconds)
+    }
     pub fn connection_string(&self) -> SecretString {
         match &self.email_service {
             EmailService::Smtp(smtp_settings) => {
@@ -57,13 +63,13 @@ impl EmailClientSettings {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct ApplicationSettings {
     pub port: u16,
     pub host: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct DatabaseSettings {
     pub username: String,
     pub password: SecretString,

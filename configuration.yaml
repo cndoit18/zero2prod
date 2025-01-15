@@ -15,3 +15,4 @@ email_client:
       port: 1025
       username: admin
       password: admin
+      timeout_milliseconds: 10000
