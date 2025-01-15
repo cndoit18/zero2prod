@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use crate::domain::SubscriberEmail;
 use lettre::message::{header, MultiPart, SinglePart};
 use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
@@ -9,10 +11,11 @@ pub struct EmailClient {
 }
 
 impl EmailClient {
-    pub fn new(smtp_url: &str, sender: SubscriberEmail) -> Self {
+    pub fn new(smtp_url: &str, sender: SubscriberEmail, timeout: Duration) -> Self {
         Self {
             mailer: AsyncSmtpTransport::<Tokio1Executor>::from_url(smtp_url)
                 .unwrap()
+                .timeout(Some(timeout))
                 .build(),
             sender,
         }
@@ -42,7 +45,7 @@ impl EmailClient {
                             .body(html_content.to_string()),
                     ),
             )
-            .map_err(|_| "failed to build email")?;
+            .map_err(|err| format!("failed to build email: {}", err))?;
 
         self.mailer
             .send(email)
@@ -54,6 +57,8 @@ impl EmailClient {
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     use fake::faker::internet::raw::{DomainSuffix, Password, SafeEmail};
     use fake::faker::lorem::raw::{Paragraph, Sentence};
     use fake::locales::EN;
@@ -83,6 +88,7 @@ mod tests {
             .unwrap()
             .as_str(),
             sender_email,
+            Duration::from_secs(10),
         );
 
         let subscriber_email = SubscriberEmail::parse(SafeEmail(EN).fake()).unwrap();
