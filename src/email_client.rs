@@ -1,17 +1,19 @@
 use crate::domain::SubscriberEmail;
 use lettre::message::{header, MultiPart, SinglePart};
-use lettre::{Message, SmtpTransport, Transport};
+use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
 
 #[allow(dead_code)]
 pub struct EmailClient {
-    mailer: SmtpTransport,
+    mailer: AsyncSmtpTransport<Tokio1Executor>,
     sender: SubscriberEmail,
 }
 
 impl EmailClient {
     pub fn new(smtp_url: &str, sender: SubscriberEmail) -> Self {
         Self {
-            mailer: SmtpTransport::from_url(smtp_url).unwrap().build(),
+            mailer: AsyncSmtpTransport::<Tokio1Executor>::from_url(smtp_url)
+                .unwrap()
+                .build(),
             sender,
         }
     }
@@ -41,8 +43,10 @@ impl EmailClient {
                     ),
             )
             .map_err(|_| "failed to build email")?;
+
         self.mailer
-            .send(&email)
+            .send(email)
+            .await
             .map_err(|err| format!("failed to send email: {}", err))?;
         Ok(())
     }
