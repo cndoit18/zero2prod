@@ -129,6 +129,12 @@ func (m *Zero2Prod) Clippy(ctx context.Context) (string, error) {
 		WithExec([]string{"cargo", "clippy", "--", "-D", "warnings"}).Stderr(ctx)
 }
 
+func (m *Zero2Prod) SQLxCheck(ctx context.Context) (string, error) {
+	container := bindDatabaseService(m.Base)
+	return container.
+		WithExec([]string{"cargo", "sqlx", "prepare", "--check"}).Stderr(ctx)
+}
+
 func (m *Zero2Prod) FormatCheck(ctx context.Context) (string, error) {
 	return m.Base.WithExec([]string{"cargo", "fmt", "--", "--check"}).Stderr(ctx)
 }

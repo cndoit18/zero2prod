@@ -61,6 +61,12 @@ impl Application {
     }
 }
 
+#[derive(Clone)]
+pub struct ApplicationState {
+    pub pool: PgPool,
+    pub email_client: Arc<EmailClient>,
+}
+
 pub fn run(
     listener: TcpListener,
     pool: PgPool,
@@ -70,8 +76,10 @@ pub fn run(
         .layer(TraceLayer::new_for_http())
         .route("/health_check", get(routes::health_check))
         .route("/subscriptions", post(routes::subscribe))
-        .with_state(pool)
-        .with_state(Arc::new(email_client));
+        .with_state(ApplicationState {
+            pool,
+            email_client: Arc::new(email_client),
+        });
     Ok(axum::serve(listener, app))
 }
 

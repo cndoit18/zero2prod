@@ -19,6 +19,12 @@ jobs:
           version: "latest"
           call: format-check
           cloud-token: ${{ secrets.DAGGER_CLOUD_TOKEN }}
+      - name: SQLx
+        uses: dagger/dagger-for-github@v7
+        with:
+          version: "latest"
+          call: sqlx-check
+          cloud-token: ${{ secrets.DAGGER_CLOUD_TOKEN }}
       - name: Clippy
         uses: dagger/dagger-for-github@v7
         with:
