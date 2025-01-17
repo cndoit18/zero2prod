@@ -1,13 +1,17 @@
 use axum::{
     extract::{Form, State},
     http::StatusCode,
+    response,
 };
 use serde::Deserialize;
 use sqlx::types::chrono::Utc;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::domain::{NewSubscriber, SubscriberEmail, SubscriberName};
+use crate::{
+    domain::{NewSubscriber, SubscriberEmail, SubscriberName},
+    startup::ApplicationState,
+};
 
 #[derive(Deserialize)]
 pub struct FormData {
@@ -28,7 +32,7 @@ impl TryFrom<FormData> for NewSubscriber {
 
 #[tracing::instrument(
     name = "Adding a new subscriber",
-    skip(form_data, pool),
+    skip(form_data, state),
     fields(
         request_id = %Uuid::new_v4(),
         subscriber_email = %form_data.email,
@@ -36,15 +40,14 @@ impl TryFrom<FormData> for NewSubscriber {
     ),
 )]
 pub async fn subscribe(
-    State(pool): State<PgPool>,
+    State(state): State<ApplicationState>,
     Form(form_data): Form<FormData>,
-) -> Result<(), StatusCode> {
-    insert_subscriber(
-        &pool,
-        &form_data.try_into().map_err(|_| StatusCode::BAD_REQUEST)?,
-    )
-    .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+) -> response::Result<(), StatusCode> {
+    let new_subscriber: NewSubscriber =
+        form_data.try_into().map_err(|_| StatusCode::BAD_REQUEST)?;
+    insert_subscriber(&state.pool, &new_subscriber)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     Ok(())
 }
 
@@ -58,8 +61,8 @@ pub async fn insert_subscriber(
 ) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
-    INSERT INTO subscriptions (id, email, name, subscribed_at)
-    VALUES ($1, $2, $3, $4)
+    INSERT INTO subscriptions (id, email, name, subscribed_at, status)
+    VALUES ($1, $2, $3, $4, 'confirmed')
     "#,
         Uuid::new_v4(),
         new_subscriber.email.as_ref(),

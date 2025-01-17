@@ -9,10 +9,8 @@ database:
   database_name: "newsletter"
 email_client:
   sender_email: cndoit18@outlook.com
+  timeout_milliseconds: 10000
   email_service:
     smtp:
       host: mailtutan
       port: 1025
-      username: admin
-      password: admin
-      timeout_milliseconds: 10000

@@ -32,8 +32,8 @@ pub enum EmailService {
 pub struct SmtpSettings {
     pub host: String,
     pub port: u32,
-    pub username: SecretString,
-    pub password: SecretString,
+    pub username: Option<SecretString>,
+    pub password: Option<SecretString>,
 }
 
 impl EmailClientSettings {
@@ -43,9 +43,19 @@ impl EmailClientSettings {
     pub fn connection_string(&self) -> SecretString {
         match &self.email_service {
             EmailService::Smtp(smtp_settings) => {
-                SecretString::from(Url::parse(&format! {
-                    "smtp://{}:{}@{}:{}",  smtp_settings.username.expose_secret(), smtp_settings.password.expose_secret(),smtp_settings.host, smtp_settings.port,
-                }).unwrap().as_str())
+                let mut u = Url::parse(&format! {
+                    "smtp://{}:{}",  smtp_settings.host, smtp_settings.port,
+                })
+                .unwrap();
+                smtp_settings
+                    .username
+                    .as_ref()
+                    .map(|v| u.set_username(v.expose_secret()));
+                smtp_settings
+                    .password
+                    .as_ref()
+                    .map(|v| u.set_password(Some(v.expose_secret())));
+                SecretString::from(u.as_str())
             }
         }
     }

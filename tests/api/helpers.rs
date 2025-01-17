@@ -44,8 +44,8 @@ pub async fn spawn_app() -> TestApp {
             email_service: EmailService::Smtp(SmtpSettings {
                 host: "mailtutan".to_string(),
                 port: 1025,
-                username: SecretString::from("admin"),
-                password: SecretString::from("admin"),
+                username: None,
+                password: None,
             }),
             timeout_milliseconds: 10000,
         },
