@@ -1,8 +1,8 @@
 use std::time::Duration;
 
 use crate::domain::SubscriberEmail;
-use lettre::message::{header, SinglePart};
-use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
+use lettre::message::{header, Mailbox, SinglePart};
+use lettre::{Address, AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
 
 #[allow(dead_code)]
 pub struct EmailClient {
@@ -27,13 +27,17 @@ impl EmailClient {
         subject: &str,
         text_content: &str,
     ) -> Result<(), String> {
+        let address: Address = self.sender.as_ref().parse().unwrap();
         let email = Message::builder()
-            .from(self.sender.as_ref().parse().unwrap())
+            .from(Mailbox {
+                name: Some(address.user().to_string()),
+                email: address,
+            })
             .to(recipient.as_ref().parse().unwrap())
             .subject(subject)
             .singlepart(
                 SinglePart::builder()
-                    .header(header::ContentType::TEXT_PLAIN)
+                    .header(header::ContentType::TEXT_HTML)
                     .body(text_content.to_string()), // Every message should have a plain text fallback.
             )
             .map_err(|err| format!("failed to build email: {}", err))?;

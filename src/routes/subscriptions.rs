@@ -10,6 +10,7 @@ use uuid::Uuid;
 
 use crate::{
     domain::{NewSubscriber, SubscriberEmail, SubscriberName},
+    email_client::EmailClient,
     startup::ApplicationState,
 };
 
@@ -48,7 +49,33 @@ pub async fn subscribe(
     insert_subscriber(&state.pool, &new_subscriber)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    send_confirmation_email(&state.email_client, new_subscriber)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     Ok(())
+}
+
+#[tracing::instrument(
+    name = "Send a confirmation email to a new subscriber",
+    skip(email_client, new_subscriber)
+)]
+pub async fn send_confirmation_email(
+    email_client: &EmailClient,
+    new_subscriber: NewSubscriber,
+) -> Result<(), String> {
+    let confirmation_link = "https://my-api.com/subscriptions/confirm";
+    email_client
+        .send_email(
+            new_subscriber.email,
+            "Welcome newsletter!",
+            &format!(
+                "Welcome to our newsletter!<br />
+    Click <a href=\"{}\">here</a> to confirm your subscription.",
+                confirmation_link,
+            ),
+        )
+        .await
 }
 
 #[tracing::instrument(
@@ -62,7 +89,7 @@ pub async fn insert_subscriber(
     sqlx::query!(
         r#"
     INSERT INTO subscriptions (id, email, name, subscribed_at, status)
-    VALUES ($1, $2, $3, $4, 'confirmed')
+    VALUES ($1, $2, $3, $4, 'pending_confirmation')
     "#,
         Uuid::new_v4(),
         new_subscriber.email.as_ref(),
