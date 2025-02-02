@@ -76,6 +76,7 @@ pub fn run(
         .layer(TraceLayer::new_for_http())
         .route("/health_check", get(routes::health_check))
         .route("/subscriptions", post(routes::subscribe))
+        .route("/subscriptions/confirm", get(routes::confirm))
         .with_state(ApplicationState {
             pool,
             email_client: Arc::new(email_client),

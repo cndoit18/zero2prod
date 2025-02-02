@@ -116,8 +116,22 @@ func bindDatabaseService(container *dagger.Container) *dagger.Container {
 		WithExec([]string{"cargo", "sqlx", "migrate", "run"})
 }
 
+func bindSMTPService(container *dagger.Container) *dagger.Container {
+	return container.WithServiceBinding("mailtutan",
+		dag.Container().From("mailtutan/mailtutan:latest").
+			WithExposedPort(1025, dagger.ContainerWithExposedPortOpts{
+				Protocol:                    dagger.NetworkProtocolTcp,
+				ExperimentalSkipHealthcheck: false,
+			}).
+			AsService(dagger.ContainerAsServiceOpts{
+				UseEntrypoint: true,
+			}),
+	)
+}
+
 func (m *Zero2Prod) Test(ctx context.Context) (string, error) {
 	container := bindDatabaseService(m.Base)
+	container = bindSMTPService(container)
 	return container.
 		WithEnvVariable("RUST_BACKTRACE", "1").
 		WithExec([]string{"cargo", "test", "--", "--nocapture"}).Stderr(ctx)
@@ -125,12 +139,14 @@ func (m *Zero2Prod) Test(ctx context.Context) (string, error) {
 
 func (m *Zero2Prod) Clippy(ctx context.Context) (string, error) {
 	container := bindDatabaseService(m.Base)
+	container = bindSMTPService(container)
 	return container.
 		WithExec([]string{"cargo", "clippy", "--", "-D", "warnings"}).Stderr(ctx)
 }
 
 func (m *Zero2Prod) SQLxCheck(ctx context.Context) (string, error) {
 	container := bindDatabaseService(m.Base)
+	container = bindSMTPService(container)
 	return container.
 		WithExec([]string{"cargo", "sqlx", "prepare", "--check"}).Stderr(ctx)
 }
@@ -141,6 +157,7 @@ func (m *Zero2Prod) FormatCheck(ctx context.Context) (string, error) {
 
 func (m *Zero2Prod) Audit(ctx context.Context) (string, error) {
 	container := bindDatabaseService(m.Base)
+	container = bindSMTPService(container)
 	return container.
 		WithExec([]string{"cargo", "audit"}).Stderr(ctx)
 }
