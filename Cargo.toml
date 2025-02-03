@@ -29,6 +29,7 @@ reqwest = { version = "0.12.9", features = ["json", "rustls-tls"] }
 wiremock = "0.6.2"
 lettre = { version = "0.11.11", features = ["tracing", "builder", "hostname", "smtp-transport", "tokio1-rustls-tls"], default-features = false }
 url = "2.5.4"
+rand = { version = "0.9.0", features = ["std_rng"] }
 
 [dev-dependencies]
 maik = "0.1.0"

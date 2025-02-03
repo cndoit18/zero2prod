@@ -50,6 +50,7 @@ pub async fn spawn_app() -> TestApp {
         application: ApplicationSettings {
             port: 0,
             host: "0.0.0.0".to_string(),
+            base_url: "http://127.0.0.1:8000".to_string(),
         },
         email_client: EmailClientSettings {
             sender_email: "cndoit18@outlook.com".to_string(),
