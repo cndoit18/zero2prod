@@ -49,7 +49,12 @@ impl Application {
         );
         let listener = TcpListener::bind(address).await?;
         let port = listener.local_addr().unwrap().port();
-        let server = run(listener, pool, email_client)?;
+        let server = run(
+            listener,
+            pool,
+            email_client,
+            configuration.application.base_url,
+        )?;
 
         Ok(Self { port, server })
     }
@@ -64,6 +69,7 @@ impl Application {
 #[derive(Clone)]
 pub struct ApplicationState {
     pub pool: PgPool,
+    pub base_url: String,
     pub email_client: Arc<EmailClient>,
 }
 
@@ -71,6 +77,7 @@ pub fn run(
     listener: TcpListener,
     pool: PgPool,
     email_client: EmailClient,
+    base_url: String,
 ) -> Result<Serve<Router, Router>, std::io::Error> {
     let app: Router = Router::new()
         .layer(TraceLayer::new_for_http())
@@ -78,6 +85,7 @@ pub fn run(
         .route("/subscriptions", post(routes::subscribe))
         .route("/subscriptions/confirm", get(routes::confirm))
         .with_state(ApplicationState {
+            base_url,
             pool,
             email_client: Arc::new(email_client),
         });
