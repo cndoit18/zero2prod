@@ -25,10 +25,10 @@ tracing-bunyan-formatter = "0.3.10"
 secrecy = { version = "0.10.3", features = ["serde"] }
 unicode-segmentation = "1.12.0"
 validator = "0.19.0"
-reqwest = { version = "0.12.9", features = ["json", "rustls-tls"] }
-wiremock = "0.6.2"
 lettre = { version = "0.11.11", features = ["tracing", "builder", "hostname", "smtp-transport", "tokio1-rustls-tls"], default-features = false }
 url = "2.5.4"
+rand = { version = "0.9.0", features = ["std_rng"] }
+openssl = "0.10.70"
 
 [dev-dependencies]
 maik = "0.1.0"
@@ -36,4 +36,4 @@ fake = "3.1.0"
 once_cell = "1.20.2"
 quickcheck = "1.0.3"
 quickcheck_macros = "1.0.0"
-reqwest = "0.12.9"
+reqwest = { version = "0.12.9", features = ["json", "rustls-tls"] }
